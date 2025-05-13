@@ -1,78 +1,22 @@
-import torch
-import cv2
-import os
-from collections import Counter
-
-# --- CONFIGURATION ---
-img_path = 'dataset/010.jpg'   # Update this to your image path
-output_img_path = 'output/detected_shelf.jpg'
-output_txt_path = 'output/detection_summary.txt'
-confidence_threshold = 0.01    # You can increase for higher precision
-max_display_width = 1280       # Auto-resize to fit screen width
-grid_rows = 3
-grid_cols = 5
-
-# --- LOAD IMAGE ---
-img = cv2.imread(img_path)
-if img is None:
-    print(f"❌ Error: Image not found at {img_path}")
-    exit()
-
-# --- LOAD MODEL ---
-model = torch.hub.load('yolov5', 'yolov5s', source='local')
-model.conf = confidence_threshold
-
-# --- DETECTION ---
-results = model(img)
-df = results.pandas().xyxy[0]
-product_count = len(df)
-print(f"✅ Total products detected: {product_count}")
-
-# --- DRAW DETECTIONS ---
-for _, row in df.iterrows():
-    x1, y1, x2, y2 = int(row['xmin']), int(row['ymin']), int(row['xmax']), int(row['ymax'])
-    label = f"{row['name']} {row['confidence']:.2f}"
-    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    cv2.putText(img, label, (x1, max(y1 - 10, 10)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-# --- COUNT BY CLASS ---
-class_counts = Counter(df['name'])
-summary_text = ' | '.join([f"{cls}({cnt})" for cls, cnt in class_counts.items()])
-
-# --- OVERLAY INFO ---
-cv2.rectangle(img, (0, 0), (max(500, len(summary_text)*7), 30), (0, 0, 0), -1)
-cv2.putText(img, f"Detected: {product_count} | {summary_text}",
-            (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
-
-# --- OPTIONAL GRID OVERLAY ---
-def draw_grid(image, rows=3, cols=5):
-    h, w = image.shape[:2]
-    for r in range(1, rows):
-        y = int(h * r / rows)
-        cv2.line(image, (0, y), (w, y), (200, 200, 200), 1)
-    for c in range(1, cols):
-        x = int(w * c / cols)
-        cv2.line(image, (x, 0), (x, h), (200, 200, 200), 1)
-
-draw_grid(img, rows=grid_rows, cols=grid_cols)
-
-# --- RESIZE FOR SCREEN DISPLAY ---
-h, w = img.shape[:2]
-if w > max_display_width:
-    scale = max_display_width / w
-    img = cv2.resize(img, (int(w * scale), int(h * scale)))
-
-# --- SAVE OUTPUTS ---
-os.makedirs('output', exist_ok=True)
-cv2.imwrite(output_img_path, img)
-with open(output_txt_path, 'w') as f:
-    f.write(f"Total detected: {product_count}\n")
-    for cls, cnt in class_counts.items():
-        f.write(f"{cls}: {cnt}\n")
-
-# --- DISPLAY IMAGE ---
-cv2.namedWindow('Shelf Detection', cv2.WINDOW_NORMAL)
-cv2.imshow('Shelf Detection', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+TITLE : Retail Shelf Inventory Monitoring.
+PURPOSE : The goal is to use deep learning and computer vision to automatically identify and count retail items on a shelf.
+          The primary use case is for store managers or retailers to:
+               -Keep an eye on product placement.
+               - Identify items that are out of stock. 
+               - Track the frequency and presence of products on shelves.
+TECHNOLOGIES USED :LANGUAGE USED : Python
+                   Selected due to its vast ecosystem in deep learning and computer vision.
+                   USE OF LIBRARIES AND PACKAGES:
+                   The pre-trained YOLOv5 deep learning model is loaded and executed by torch (PyTorch). 
+                   CV2 (OpenCV) manages image processing, drawing, and display.
+                   OS = File path management, directory collection creation.YOLOv5 uses a counter, which is a simple method of counting detected classes and summarizing pandas, to return results in tabular format 
+                   (df)
+ USAGE : A technology-driven tool for managing and tracking products on store shelves in real time is a shelf retail inventory monitoring system. Its main purpose is to help retailers prevent stockouts and lost 
+         sales by making sure that inventory levels are maintained precisely and that products are displayed appropriately. The system can automatically identify when items are running low or out of stock and 
+         notify staff or start restocking procedures by leveraging technologies like RFID tags, Internet of Things sensors, and computer vision. By confirming that products are arranged in accordance with 
+         merchandising guidelines, it also guarantees planogram compliance. By keeping an eye on differences between inventory records and shelf contents, these systems can also aid in the detection of theft or 
+         shrinkage. Shelf monitoring systems offer insightful information beyond inventory control.
+CONCLUSION : After running the code the output will be generated in the following format
+             OUTPUT :
+                     Annotated image - output/detected_shelf.jpg
+                     Detection summary - output/detection_summary.txt
